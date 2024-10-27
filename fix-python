@@ -86,36 +86,7 @@ then
   if [ "$verbose" ]; then echo "dep_patchelf_path=$dep_patchelf_path"; fi
 fi
 
-# load libs from Nix file
-if [ "$LIBS_PATH" ];
-then
-  # if $LIBS_PATH is just a file in the current working directory,
-  # specified without leading "./", we add "./" so that $LIBS_PATH
-  # can be interpreted directly as a Nix path in the following
-  # expression
-  if [[ ! "$LIBS_PATH" == *"/"* ]];
-  then
-    LIBS_PATH="./$LIBS_PATH"
-  fi
-  custom_libs_expression="(import $LIBS_PATH)"
-  mkdir -p .nix/fix-python
-  nix_libs_build_status=$(
-    nix build --impure --expr "$custom_libs_expression" -o .nix/fix-python/result
-    echo $?
-  )
-  if [ "$nix_libs_build_status" -eq "1" ];
-  then
-    echo "Failed to load libs from Nix file $LIBS_PATH"
-    echo ""
-    echo "Try to debug this issue with the command:"
-    echo "    nix build --impure --expr \"import $LIBS_PATH\""
-    exit 1
-  fi
-else
-  custom_libs_expression="[]"
-fi
-all_nix_libs_expression="($custom_libs_expression ++ $DEFAULT_LIBS_EXPRESSION)"
-nixos_python_nix_libs="$(nix eval --impure --expr "let pkgs = import (builtins.getFlake \"nixpkgs\") {}; in pkgs.lib.strings.makeLibraryPath $all_nix_libs_expression" | sed 's/^"\(.*\)"$/\1/')"
+nixos_python_nix_libs="$LIBS_PATH"
 if [ "$verbose" ]; then echo "nixos_python_nix_libs=$nixos_python_nix_libs"; fi
 libs="$nixos_python_nix_libs"
 
